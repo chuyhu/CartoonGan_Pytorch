@@ -1,23 +1,30 @@
+import logging
+logging.basicConfig(level=logging.DEBUG, format='[%(asctime)s][%(levelname)s][%(threadName)-10s] %(message)s')
+
+
 import argparse
 import numpy as np
 from PIL import Image
 import torchvision.transforms as transforms
 from torch.autograd import Variable
-import torchvision.transforms as transforms
-from torch.autograd import Variable
-
+import torch
+import os
+from network import Transformer
+import server as apiserver
+import asyncio
 
 def get_app_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--input_dir', default='test_img')
-    parser.add_argument('--load_size', default=450)
-    parser.add_argument('--model_path', default='./pretrained_model')
+    parser.add_argument('--input-dir', dest='input_dir', default='test_img')
+    parser.add_argument('--load-size', dest='load_size', default=450)
+    parser.add_argument('--model-path', dest='model_path', default='./pretrained_model')
     parser.add_argument('--style', default='Hayao')
-    parser.add_argument('--server', default=False)
-    parser.add_argument('--server_host', default="127.0.0.1")
-    parser.add_argument('--server_port', default=56841)
-    parser.add_argument('--server_unix', default="")
-    parser.add_argument('--output_dir', default='test_output4')
+    parser.add_argument('--server', default=False, dest='server', action='store_true')
+    parser.add_argument('--verbose', default=False, dest='verbose', action='store_true')
+    parser.add_argument('--server-host', dest='server_host', default="")
+    parser.add_argument('--server-port', dest='server_port', default=56841)
+    parser.add_argument('--server-unix', dest='server_unix', default="")
+    parser.add_argument('--output-dir', dest='output_dir', default='test_output4')
     parser.add_argument('--gpu', type=int, default=0)
     return parser.parse_args()
 
@@ -67,5 +74,24 @@ def process_image(input_image):
     return output_image
 
 
+async def main(opts):
+    if opts.verbose is not True:
+        logging.basicConfig(level=logging.INFO, format='[%(asctime)s][%(levelname)s][%(threadName)-10s] %(message)s')
+
+    if opts.server:
+        logging.info("Server mode")
+
+        if opts.server_unix is not None and opts.server_unix != "":
+            server = apiserver.APIServer(address=opts.server_unix, useUnixSocket=True)
+        else:
+            server = apiserver.APIServer(address=(opts.server_host, opts.server_port), useUnixSocket=False)
+
+        await server.start()
+        pass
+
+
 if __name__ == '__main__':
+    logging.info("PaintApp python backend loading")
     opt = get_app_arguments()
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main(opt))
