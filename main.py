@@ -13,6 +13,7 @@ from network import Transformer
 import server as apiserver
 import asyncio
 
+
 def get_app_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('--input-dir', dest='input_dir', default='test_img')
@@ -86,7 +87,7 @@ async def main(opts):
         else:
             server = apiserver.APIServer(address=(opts.server_host, opts.server_port), useUnixSocket=False)
 
-        await server.start()
+        server.start()
         pass
 
 
